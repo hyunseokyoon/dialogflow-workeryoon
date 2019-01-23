@@ -60,28 +60,21 @@ const app = dialogflow({
 
 fallback = ((conv) => {
 
-    return new Promise((resolve, reject) => {
-        request.get('https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY', {json: true}, (err, res, body) => {
-            if (err) {
-
-                console.log(err);
-                reject(err);
-                return;
-            }
-
-            console.log(body.url);
-            console.log(body.explanation);
-            conv.ask(new SimpleResponse({
-                speech: body.url,
-                text: body.explanation,
-            }));
-            resolve();
-        });
-
-    });
+    conv.ask(new SimpleResponse({
+        speech: '심플',
+        text: '심플',
+    }));
+    conv.followup('custom_event', {}, 'en-US');
 });
 
 app.intent('fallback', fallback);
+app.intent('event_test', conv => {
+   conv.ask(new SimpleResponse({
+       speech: '이벤트테스트',
+       text: '이벤트테스트',
+   }))
+
+});
 
 app.fallback((conv) => {
     console.error('No matching intent handler found: ' + conv.intent);
