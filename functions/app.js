@@ -6,6 +6,8 @@ const {
     SimpleResponse,
 } = require('actions-on-google');
 
+const request = require('request');
+
 const getConfig = () => {
     let config;
     try {
@@ -39,19 +41,51 @@ const app = dialogflow({
 });
 
 
+// fallback = ((conv) => {
+//     console.error('No matching intent handler found: ' + conv.intent);
+//     request.get('https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY', {json: true}, (err, res, body) => {
+//         if (err) { return console.log(err); }
+//         console.log(body.url);
+//         console.log(body.explanation);
+//         conv.ask(new SimpleResponse({
+//             speech: body.url,
+//             text: body.explanation,
+//         }));
+//     });
+//     // conv.ask(new SimpleResponse({
+//     //     speech: `다시 한 번 말씀해 주시겠어요?`,
+//     //     text: `다시 한 번 말씀해 주시겠어요?`,
+//     // }));
+// });
+
 fallback = ((conv) => {
-    console.error('No matching intent handler found: ' + conv.intent);
-    conv.ask(new SimpleResponse({
-        speech: `다시 한 번 말씀해 주시겠어요?`,
-        text: `다시 한 번 말씀해 주시겠어요?`,
-    }));
+
+    return new Promise((resolve, reject) => {
+        request.get('https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY', {json: true}, (err, res, body) => {
+            if (err) {
+
+                console.log(err);
+                reject(err);
+                return;
+            }
+
+            console.log(body.url);
+            console.log(body.explanation);
+            conv.ask(new SimpleResponse({
+                speech: body.url,
+                text: body.explanation,
+            }));
+            resolve();
+        });
+
+    });
 });
 
 app.intent('fallback', fallback);
 
 app.fallback((conv) => {
     console.error('No matching intent handler found: ' + conv.intent);
-    fallback(conv);
+    return fallback(conv);
 });
 
 exports.app = app;
