@@ -23,6 +23,17 @@ server.use(bodyParser.json({type: 'application/json'}));
 
 const config = getConfig();
 
+var TogglClient = require('toggl-api')
+    , toggl = new TogglClient({apiToken: config.togglApiToken})
+
+toggl.getCurrentTimeEntry((err, entry) => {
+    console.log(entry);
+    toggl.stopTimeEntry(entry.id, (err, entry) => {
+       console.log(entry);
+    });
+});
+
+
 fallback = conv => {
 
     return new Promise((resolve, reject) => {
