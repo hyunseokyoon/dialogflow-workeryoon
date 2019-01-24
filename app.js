@@ -2,6 +2,11 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const request = require('request');
 const {dialogflow, SimpleResponse} = require('actions-on-google');
+const moment = require('moment');
+
+require('@google-cloud/debug-agent').start();
+
+moment.locale('ko');
 
 const getConfig = () => {
   let config;
@@ -25,13 +30,6 @@ const config = getConfig();
 
 var TogglClient = require('toggl-api')
     , toggl = new TogglClient({apiToken: config.togglApiToken})
-
-toggl.getCurrentTimeEntry((err, entry) => {
-  console.log(entry);
-  toggl.stopTimeEntry(entry.id, (err, entry) => {
-    console.log(entry);
-  });
-});
 
 fallback = conv => {
   conv.ask(new SimpleResponse({
@@ -57,20 +55,84 @@ trackstart = (conv, params) => {
       resolve(entry);
     });
   }).then(entry => {
-    conv.ask(new SimpleResponse({
-      speech: entry.description + '를 기록중입니다.',
-      text: entry.description,
+    conv.close(new SimpleResponse({
+      speech: entry.description + ', 기록 시작합니다.',
+      text: entry.description + ', 기록 시작합니다.',
     }));
   }).catch(err => {
     conv.close();
-  });;
+  });
+};
+
+trackstop = conv => {
+    return new Promise((resolve, reject) => {
+        toggl.getCurrentTimeEntry((err, entry) => {
+            if (err) {
+                console.log(err);
+                reject(err);
+                return;
+            }
+            toggl.stopTimeEntry(entry.id, (err, entry) => {
+                if (err) {
+                    console.log(err);
+                    reject(err);
+                    return;
+                }
+                resolve(entry)
+            });
+        });
+    }).then(entry => {
+        conv.close(new SimpleResponse({
+            speech: entry.description + ', 중지했습니다.',
+            text: entry.description + ', 중지했습니다.',
+        }));
+    }).catch(err => {
+        conv.close();
+    });
+};
+
+welcome = conv => {
+    return new Promise((resolve, reject) => {
+        toggl.getCurrentTimeEntry((err, entry) => {
+            if (err) {
+                console.log(err);
+                reject(err);
+                return;
+            }
+            resolve(entry);
+        });
+    }).then(entry => {
+        console.log(entry);
+        if (entry) {
+            //const duration = moment.duration(new Date() - new Date(entry.timestamp)).humanize();
+
+            conv.ask(new SimpleResponse({
+                speech: entry.description + ', 기록중입니다.',
+                text: entry.description + ', 기록중입니다.',
+            }));
+            // conv.ask(new SimpleResponse({
+            //     speech: entry.description + ', '+ duration + '간 기록중입니다.',
+            //     text: entry.description + ', '+ duration + '간 기록중입니다.',
+            // }));
+        } else {
+            conv.ask(new SimpleResponse({
+                speech: '넵',
+                text: '넵',
+            }));        }
+
+    }).catch(err => {
+        conv.close();
+    });
 };
 
 app.intent('track-start', trackstart);
+app.intent('track-stop', trackstop);
+app.intent('welcome', welcome);
 app.intent('fallback', fallback);
 
 app.fallback((conv) => {
   console.error('No matching intent handler found: ' + conv.intent);
+
   return fallback(conv);
 });
 server.post('/webhook', app);
