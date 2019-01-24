@@ -57,6 +57,8 @@ trackstart = (conv, params) => {
             } else {
                 opts.description = name;
             }
+        } else {
+            opts.description = name;
         }
 
         toggl.startTimeEntry( opts , function (err, entry) {
@@ -68,7 +70,7 @@ trackstart = (conv, params) => {
             resolve(entry);
         });
     }).then(entry => {
-        if (projNameId[entry.pid]) {
+        if (projIdName[entry.pid]) {
             conv.close(entry.description + ', 기록 시작합니다. 분류는 ' + projIdName[entry.pid] + ' 입니다.');
         } else {
             conv.close(entry.description + ', 기록 시작합니다.');
@@ -262,7 +264,7 @@ welcomeyes = conv => {
 };
 
 welcomeno = conv => {
-    conv.ask("새로운 기록하거나 분류를 갱신하려면 말씀해주세요.");
+    conv.ask("기록 시작, 기록 중지, 분류 갱신 이 가능합니다. 준비가 되면 말씀해주세요.");
 };
 
 updateCache();
