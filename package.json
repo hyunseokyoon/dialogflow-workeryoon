@@ -1,0 +1,49 @@
+{
+  "name": "dialogflow-webhook-server",
+  "description": "Webhook server for dialogflow",
+  "engines": {
+    "node": ">=8"
+  },
+  "main": "app.js",
+  "private": true,
+  "scripts": {
+    "serve": "firebase serve --only functions",
+    "shell": "firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "cloud-repo-tools": {
+    "requiresKeyFile": true,
+    "requiresProjectId": true,
+    "test": {
+      "app": {
+        "args": [
+          "app.js"
+        ],
+        "msg": "Hello, world!"
+      }
+    }
+  },
+  "scripts": {
+    "start": "node app.js",
+    "e2e": "repo-tools test deploy",
+    "test": "repo-tools test app",
+    "cover": "nyc --cache npm test; nyc report --reporter=html"
+  },
+  "dependencies": {
+    "actions-on-google": "^2.5.0",
+    "firebase-admin": "~6.0.0",
+    "firebase-functions": "^2.1.0",
+    "request": "^2.88.0",
+    "body-parser": "^1.18.3",
+    "express": "^4.16.4",
+    "toggl-api": "^1.0.1"
+  },
+  "devDependencies": {
+    "@google-cloud/nodejs-repo-tools": "^3.0.0",
+    "ava": "0.25.0",
+    "supertest": "^3.3.0"
+  }
+}
+
