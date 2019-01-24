@@ -33,30 +33,40 @@ toggl.getCurrentTimeEntry((err, entry) => {
   });
 });
 
-
 fallback = conv => {
+  conv.ask(new SimpleResponse({
+    speech: '무엇을 할까요?',
+    text: '무엇을 할까요?',
+  }));
+}
 
+trackstart = (conv, params) => {
+
+  console.log(conv);
+  console.log(params);
   return new Promise((resolve, reject) => {
-    request.get('https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY', {json: true}, (err, res, body) => {
+
+    toggl.startTimeEntry({
+      description: params['entry']
+    }, function (err, entry) {
       if (err) {
         console.log(err);
         reject(err);
         return;
       }
-
-      console.log(body.url);
-      console.log(body.explanation);
-      resolve(body);
+      resolve(entry);
     });
-  }).then(body => {
+  }).then(entry => {
     conv.ask(new SimpleResponse({
-      speech: body.url,
-      text: body.explanation,
+      speech: entry.description + '를 기록중입니다.',
+      text: entry.description,
     }));
   }).catch(err => {
     conv.close();
-  });
+  });;
 };
+
+app.intent('track-start', trackstart);
 app.intent('fallback', fallback);
 
 app.fallback((conv) => {
