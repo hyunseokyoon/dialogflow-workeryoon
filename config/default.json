@@ -1,5 +1,7 @@
 {
   "clientId": "REPLACE_CLIENT_ID",
   "togglApiToken": "REPLACE_API_TOKEN",
-  "togglWorkspaceId": "REPLACE_WORKSPACE_ID"
+  "togglWorkspaceId": "REPLACE_WORKSPACE_ID",
+  "GCLOUD_PROJECT": "[YOUR_PROJECT_ID]",
+  "DATA_BACKEND": "datastore"
 }

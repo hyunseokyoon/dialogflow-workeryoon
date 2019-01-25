@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const request = require('request');
 const {dialogflow, SimpleResponse} = require('actions-on-google');
 const moment = require('moment');
+const {Datastore} = require('@google-cloud/datastore');
 
 require('@google-cloud/debug-agent').start();
 
@@ -30,6 +31,11 @@ const config = getConfig();
 
 var TogglClient = require('toggl-api')
     , toggl = new TogglClient({apiToken: config.togglApiToken})
+
+const datastore = new Datastore({
+    projectId: config.GCLOUD_PROJECT,
+});
+
 
 fallback = conv => {
     conv.ask(new SimpleResponse({
@@ -267,6 +273,70 @@ welcomeno = conv => {
     conv.ask("기록 시작, 기록 중지, 분류 갱신 이 가능합니다. 준비가 되면 말씀해주세요.");
 };
 
+trackworkout = (conv, params) => {
+
+    return new Promise((resolve, reject) => {
+        const kind = 'Workout';
+        // The Cloud Datastore key for the new entity
+        const key = datastore.key(kind);
+        const data = {};
+
+        data['name'] = params['name'];
+        data['raw'] = params['raw'];
+        data['createdAt'] = new Date();
+        console.log(conv);
+        console.log(params);
+
+        const strs = params['raw'].split(" ");
+        console.log(strs);
+        strs.forEach( str => {
+            if (str.includes('회','번','반복')) {
+                data['repeat'] = parseInt(str.match(/\d+/)[0]);
+            } else if (str.includes('kg', '킬로', '키로')) {
+                data['weight'] = parseInt(str.match(/\d+/)[0]);
+            } else if (str.includes('m','km')) {
+                if (str.includes('km')) {
+                    data['distance'] = parseInt(parseFloat(str.match(/\d+/)[0]) * 1000);
+                } else {
+                    data['distance'] = parseInt(str.match(/\d+/)[0]);
+                }
+            } else if (str.includes('분')) {
+                data['duration'] = parseInt(str.match(/\d+/)[0]);
+            }
+        });
+
+        console.log(data);
+        datastore.save({key: key, data: data}, {},(err, resp) => {
+            if (err) {
+                console.log(err);
+                reject();
+                return;
+            }
+            resolve(data);
+        });
+
+    }).then(data => {
+        var message = data['name'];
+        if (data['weight']) {
+            message += ' ' + data['weight'] + 'kg';
+        }
+        if (data['repeat']) {
+            message += ' ' + data['repeat'] + '번';
+        }
+        if (data['distance']) {
+            message += ' ' + data['distance'] + '미터';
+        }
+        if (data['duration']) {
+            message += ' ' + data['duration'] + '분';
+        }
+        message += ' 기록했습니다.';
+        conv.ask(message);
+
+    }).catch( err => {
+       conv.close();
+    });
+};
+
 updateCache();
 
 app.intent('track-category-update', categoryupdate);
@@ -276,6 +346,7 @@ app.intent('track-stop', trackstop);
 app.intent('welcome', welcome);
 app.intent('welcome-yes', welcomeyes);
 app.intent('welcome-no', welcomeno);
+app.intent('track-workout', trackworkout);
 app.intent('fallback', fallback);
 
 app.fallback((conv) => {
